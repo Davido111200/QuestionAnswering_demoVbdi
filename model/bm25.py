@@ -94,7 +94,7 @@ class BM25Okapi(BM25):
             self.idf[word] = eps
 
     def get_scores(self, query):
-        score = np.zeros(self.corpus_len)
+        score = [0.0 for _ in range(self.corpus_len)]
         doc_len = np.array(self.doc_len)
         for q in query:
             q_freq = np.array([(doc.get(q) or 0) for doc in self.df])
