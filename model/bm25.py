@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 
 class BM25:
     """
