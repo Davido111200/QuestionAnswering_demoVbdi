@@ -1,6 +1,5 @@
 from transformers import DPRReader, DPRReaderTokenizer
 import numpy as np
-import torch
 
 class DPR:
 
@@ -16,6 +15,7 @@ class DPR:
         if not isinstance(docs, list):
             docs = [docs]
 
+        query = query * len(docs)
         encoded_inputs = self.tokenizer(questions=query,texts=docs, return_tensors='pt',padding=True, truncation=True).to(self.device)
         scores = self.reader(**encoded_inputs).relevance_logits
         scores = scores.detach().cpu().numpy()
@@ -37,7 +37,7 @@ def softmax(x):
 
 if __name__ == '__main__':
     dpr = DPR()
-    query = ["where marx was born?"]*12
+    query = ["where marx was born?"]
     docs = [
         "Karl Heinrich Marx FRSA (German: [maʁks]; 5 May 1818 – 14 March 1883) was a German philosopher, economist, historian, sociologist, political theorist, journalist, critic of political economy, and socialist revolutionary. His best-known titles are the 1848 pamphlet The Communist Manifesto and the four-volume Das Kapital (1867–1883). Marx's political and philosophical thought had enormous influence on subsequent intellectual, economic, and political history. His name has been used as an adjective, a noun, and a school of social theory.".lower(),
         "Born in Trier, Germany, Marx studied law and philosophy at the universities of Bonn and Berlin. He married German theatre critic and political activist Jenny von Westphalen in 1843. Due to his political publications, Marx became stateless and lived in exile with his wife and children in London for decades, where he continued to develop his thought in collaboration with German philosopher Friedrich Engels and publish his writings, researching in the British Museum Reading Room.".lower(),
