@@ -36,9 +36,15 @@ class GoogleSearch:
         """
         try:
             print(url)
-            response = requests.get(url)
+            response = requests.get(url, timeout=1.0)
             soup = BeautifulSoup(response.text, 'html.parser')
-            return soup.get_text()
+            soup = ' '.join([p.text for p in soup.find_all('p')])
+            soup = re.sub(' +', ' ', soup)
+            soup = re.sub('\n+', '\n', soup)
+            soup = re.sub('\t+', '\t', soup)
+            #soup = re.sub('\s+', '\s', soup)
+            soup = re.sub(r'[^\x00-\x7F]+', ' ', soup)
+            return soup
         except:
             return ''
 
