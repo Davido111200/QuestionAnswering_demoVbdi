@@ -1,11 +1,11 @@
-from .bm25 import BM25Okapi, BM25L
-from .dpr import DPR
+from bm25 import BM25Okapi, BM25L
+from dpr import DPR
 import nltk
 from nltk.tokenize import sent_tokenize
 import numpy as np
 import re
 
-from .googlesearch import GoogleSearch
+from googlesearch import GoogleSearch
 
 class PassageRetrieval:
     """
@@ -25,7 +25,7 @@ class PassageRetrieval:
         elif search_engine == 'dpr':
             self.search_engine = DPR()
 
-    def split_passages(self, html_page, num_sent=3):
+    def split_passages(self, html_page, num_sent=10):
         """Split html page into passages
 
         Args:
