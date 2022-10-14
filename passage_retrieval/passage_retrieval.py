@@ -25,7 +25,7 @@ class PassageRetrieval:
         elif search_engine == 'dpr':
             self.search_engine = DPR()
 
-    def split_passages(self, html_page, num_sent=10):
+    def split_passages_v2(self, html_page, num_sent=10):
         """Split html page into passages
 
         Args:
@@ -36,6 +36,25 @@ class PassageRetrieval:
         passages = []
         for i in range(0, len(setences), num_sent):
             passages.append('. '.join(setences[i:i+num_sent]))
+
+        return passages
+
+    def split_passages(self, html_page, num_passages=12):
+        """Split html page into passages
+
+        Args:
+            html_page (string): string from html page
+            num_passage (int, optional): number of sentences per passage. Defaults to 10.
+        """
+        setences = sent_tokenize(html_page)
+        interval = len(setences) // num_passages
+
+        if interval == 0:
+            return [html_page]
+        # split a list to n parts
+        passages = []
+        for i in range(0, len(setences), interval):
+            passages.append('. '.join(setences[i:i+interval]))
 
         return passages
 
