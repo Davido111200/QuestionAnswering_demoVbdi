@@ -1,12 +1,22 @@
 import math
 import numpy as np
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
+
+class SimpleTokenizer:
+    def __call__(self, text) -> str:
+        return text.split()
 
 class BM25:
     """
-    BM25 abstract class for passage retrieval
+    Best Match 25 algorithm
     """
-    def __init__(self, corpus, tokinizer=None) -> None:
+    def __init__(self, corpus, tokinizer=SimpleTokenizer()) -> None:
+        """Init BM25
+
+        Args:
+            corpus (list): a list of documents
+            tokinizer (func, optional): tokenizer. Defaults to None.
+        """
         self.tokenizer = tokinizer
         self.corpus_len = 0
         self.avgdl = 0
@@ -51,9 +61,6 @@ class BM25:
     def get_scores(self, query):
         raise NotImplementedError()
 
-    """def get_batch_scores(self, queries, doc_ids):
-        raise NotImplementedError()"""
-
     def get_top_k(self, query, docs,k=10):
         scores = self.get_scores(query)
         top_k = np.argsort(scores)[::-1][:k]
@@ -69,9 +76,9 @@ class BM25:
 
 class BM25Okapi(BM25):
     """
-    BM25 implementation for passage retrieval
+    BM25Opaki implementation
     """
-    def __init__(self, corpus, tokinizer=None, k1=1.5, b=0.75, ep=0.25) -> None:
+    def __init__(self, corpus, tokinizer=SimpleTokenizer(), k1=1.5, b=0.75, ep=0.25) -> None:
         self.k1 = k1
         self.b = b
         self.ep = ep
@@ -94,7 +101,7 @@ class BM25Okapi(BM25):
             self.idf[word] = eps
 
     def get_scores(self, query):
-        score = [0.0 for _ in range(self.corpus_len)]
+        score = np.zeros(self.corpus_len)
         doc_len = np.array(self.doc_len)
         for q in query:
             q_freq = np.array([(doc.get(q) or 0) for doc in self.df])
@@ -110,14 +117,13 @@ class BM25Okapi(BM25):
 
 class BM25L(BM25):
     """
-    BM25L implementation for passage retrieval
+    BM25L implementation
     """
-    def __init__(self, corpus, tokinizer=None, k1=1.5, b=0.75, delta=0.5) -> None:
+    def __init__(self, corpus, tokinizer=SimpleTokenizer(), k1=1.5, b=0.75, delta=0.5) -> None:
         self.k1 = k1
         self.b = b
         self.delta = delta
         super().__init__(corpus, tokinizer)
-        #self.pool = Pool(cpu_count())
     
     def initialize_idf(self, nd):
         for word, freq in nd.items():
@@ -145,13 +151,9 @@ if __name__ == "__main__":
 
     def tokenizer(text):
         return text.split()
-    #tokenized_corpus = [doc.split(" ") for doc in corpus]
-
-    bm25 = BM25Okapi(corpus, tokinizer=tokenizer)
-
-
-    query = "Karl Marx birthday".lower()
-    tokenized_query = tokenizer(query)
+    bm25 = BM25Okapi(corpus)
+    query = "where marx was born?".lower()
+    tokenized_query = query.split(" ")
 
     a = bm25.get_top_k(tokenized_query, corpus, k=3)
     print(query)
