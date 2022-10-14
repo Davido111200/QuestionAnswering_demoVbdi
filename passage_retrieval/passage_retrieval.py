@@ -25,7 +25,7 @@ class PassageRetrieval:
         elif search_engine == 'dpr':
             self.search_engine = DPR()
 
-    def split_passages_v2(self, html_page, num_sent=10):
+    def split_passages_bm25(self, html_page, num_sent=5):
         """Split html page into passages
 
         Args:
@@ -39,7 +39,7 @@ class PassageRetrieval:
 
         return passages
 
-    def split_passages(self, html_page, num_passages=12):
+    def split_passages_dpr(self, html_page, num_passages=10):
         """Split html page into passages
 
         Args:
@@ -103,9 +103,14 @@ class PassageRetrieval:
         Returns:
             list: list of top passages
         """
+        if self.name == 'dpr':
+            split_passages = self.split_passages_dpr
+        else:
+            split_passages = self.split_passages_bm25
+            
         top_passages = []
         for page in list_pages:
-            passages = self.split_passages(page)
+            passages = split_passages(page)
             if len(passages) < 3:
                 continue
             top_passages.extend(self.get_top_k_one_page(query, passages, k))
