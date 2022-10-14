@@ -33,7 +33,7 @@ if __name__ == "__main__":
     gg = GoogleSearch()
     retriever = PassageRetrieval('dpr')
     passages_ = retriever.search(question , gg.search(question))
-    passages = [passages_[i][0] for i in range(len(passages_))]
+    passages = [passages_[i][1] for i in range(len(passages_))]
     answer_extractor = AnswerExtractor()
     answers = answer_extractor.extract(question, passages)
     print(answers)
