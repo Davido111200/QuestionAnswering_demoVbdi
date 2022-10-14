@@ -94,6 +94,29 @@ class PassageRetrieval:
         top_passages.sort(key=lambda x: x[0], reverse=True)
         return top_passages[:k]
 
+    def search_v2(self, query, list_pages, k=10):
+        """Search query in list of pages
+
+        Args:
+            query (string): query
+            list_pages (list): list of pages
+            k (int, optional): number of top passages. Defaults to 10.
+
+        Returns:
+            list: list of top passages
+        """
+        top_passages = []
+        for page in list_pages:
+            passages = self.split_passages(page)
+            if len(passages) < 3:
+                continue
+            #top_passages.extend(self.get_top_k_one_page(query, passages, k))
+            top_passages.extend(passages)
+        
+        top_passages = self.get_top_k_one_page(query, top_passages, k)
+        top_passages.sort(key=lambda x: x[0], reverse=True)
+        return top_passages[:k]
+
 
 # remove none-ascii characters by regural expression
 def remove_non_ascii(text):
