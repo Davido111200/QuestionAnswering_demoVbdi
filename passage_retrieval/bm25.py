@@ -63,7 +63,7 @@ class BM25:
         return res
 
     def tokenize(self, corpus):
-        pool = Pool(cpu_count())
+        pool = Pool(4)
         return pool.map(self.tokenizer, corpus)
 
 

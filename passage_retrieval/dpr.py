@@ -6,7 +6,7 @@ class DPR:
     def __init__(self, device='cuda') -> None:
         self.device = device
         self.tokenizer = DPRReaderTokenizer.from_pretrained('facebook/dpr-reader-single-nq-base')#.to('cuda')
-        self.reader = DPRReader.from_pretrained('facebook/dpr-reader-single-nq-base').to(self.device)
+        self.reader = DPRReader.from_pretrained('facebook/dpr-reader-single-nq-base')#.to(self.device)
         
     def get_scores(self, query, docs):
         if not isinstance(query, list):
@@ -16,7 +16,7 @@ class DPR:
             docs = [docs]
 
         query = query * len(docs)
-        encoded_inputs = self.tokenizer(questions=query,texts=docs, return_tensors='pt',padding=True, truncation=True).to(self.device)
+        encoded_inputs = self.tokenizer(questions=query,texts=docs, return_tensors='pt',padding=True, truncation=True)#.to(self.device)
         scores = self.reader(**encoded_inputs).relevance_logits
         scores = scores.detach().cpu().numpy()
         return softmax(scores)
