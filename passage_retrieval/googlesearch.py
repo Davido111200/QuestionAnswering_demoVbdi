@@ -8,7 +8,7 @@ import time
 
 
 class GoogleSearch:
-    """
+    """Google Search with API
     """
     def __init__(self, gg_api="AIzaSyCe6HDQsgJ3Nw42G0KZiGH4VL6afluQg-A", gg_cse='e42ceac5c43b04b50') -> None:
         self.google_api = gg_api
@@ -16,8 +16,16 @@ class GoogleSearch:
         self.pool = pool.Pool(10)
         self.service = build("customsearch", "v1", developerKey=self.google_api)
 
-    def search(self, query, start=1, num=10):
-        """
+    def search(self, query, start=0, num=5):
+        """Search query in google and return list of top k url
+
+        Args:
+            query (str): Query string
+            start (int, optional): _description_. Defaults to 1.
+            num (int, optional): Number of page. Defaults to 10.
+
+        Returns:
+            str: List of result of google searching
         """
         try:
             res = self.service.cse().list(
@@ -32,21 +40,27 @@ class GoogleSearch:
             return []
 
     def get_content(self, url):
+        """Get content from url
+
+        Args:
+            url (str): an url
+
+        Returns:
+            str: Text information from url
         """
-        """
-        try:
-            print(url)
-            response = requests.get(url, timeout=1.0)
+        
+        try: 
+            #print(url)
+            response = requests.get(url, timeout=0.5)
             soup = BeautifulSoup(response.text, 'html.parser')
             soup = ' '.join([p.text for p in soup.find_all('p')])
             soup = re.sub(' +', ' ', soup)
             soup = re.sub('\n+', '\n', soup)
             soup = re.sub('\t+', '\t', soup)
-            #soup = re.sub('\s+', '\s', soup)
             soup = re.sub(r'[^\x00-\x7F]+', ' ', soup)
             return soup
         except:
-            return ''
+            return 'None'
 
     def __getstate__(self):
         self_dict = self.__dict__.copy()
@@ -61,13 +75,11 @@ if __name__ == "__main__":
     gg = GoogleSearch()
     start_time = time.time()
     print("Start")
-    res = gg.search("Hà Nội là thủ đô của Việt Nam không?", 10)
+    res = gg.search("What is karl marx birthday?")
     print("Time: ", time.time() - start_time)
     print("Stop")
     print()
     print()
 
-    if len(res)!=0:
-        print(res[0])
 
     
