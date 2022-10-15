@@ -21,7 +21,7 @@ def get_answer(question):
     return answers
 
 def get_k_top_answer(answers, k):
-    return answers.get("answer")[0:k]
+    return answers.get("answer")[0:k], answers.get("score")[0:k]
 
 
 def app():
@@ -63,8 +63,9 @@ def app():
         with col2:
             with st.spinner(text="🤖 Finding Answers..."):
                 answers = get_answer(question)
-                first_k_answers = get_k_top_answer(answers, num_answers)
-            st.write(first_k_answers)
+                first_k_answers, first_k_scores = get_k_top_answer(answers, num_answers)
+            for answer in first_k_answers:
+                st.write(answer)
             st.balloons()
 
 

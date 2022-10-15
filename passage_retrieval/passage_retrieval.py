@@ -1,11 +1,11 @@
-from bm25 import BM25Okapi, BM25L
-from dpr import DPR
+from .bm25 import BM25Okapi, BM25L
+from .dpr import DPR
 import nltk
 from nltk.tokenize import sent_tokenize
 import numpy as np
 import re
 
-from googlesearch import GoogleSearch
+from .googlesearch import GoogleSearch
 
 class PassageRetrieval:
     """
