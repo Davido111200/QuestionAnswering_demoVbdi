@@ -11,12 +11,12 @@ from mrc.AnswerExtractionScoring import AnswerExtractor
 st.set_page_config(layout="wide", page_icon="🖱️", page_title="Search engine tiny")
 st.title('Question Answering')
 
-def get_answer(question):
-    gg = GoogleSearch()
-    retriever = PassageRetrieval("dpr")
-    passages_ = retriever.search(question, gg.search(question))
+gg = GoogleSearch()
+answer_extractor = AnswerExtractor()
+
+def get_answer(question, retriever_model):
+    passages_ = retriever_model.search(question, gg.search(question))
     passages = [passages_[i][1] for i in range(len(passages_))]
-    answer_extractor = AnswerExtractor()
     answers = answer_extractor.extract(question, passages)
     return answers
 
@@ -32,7 +32,6 @@ def app():
     col1, col2 = st.columns(2)
 
     with col1:
-        # st.checkbox("Hỏi thật hay đùa?", key="disabled")
         type_of_search = st.radio(
             "What type of search algorithm do you want to choose?",
             ('bm25', 'dpr'))
@@ -58,11 +57,14 @@ def app():
         done = st.button(
             "Search"
         )
+
+
     if done:
 
         with col2:
             with st.spinner(text="🤖 Finding Answers..."):
-                answers = get_answer(question)
+                retriever = PassageRetrieval(str(type_of_search))
+                answers = get_answer(question, retriever_model=retriever)
                 first_k_answers, first_k_scores = get_k_top_answer(answers, num_answers)
             for answer in first_k_answers:
                 st.write(answer)
