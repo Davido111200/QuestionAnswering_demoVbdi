@@ -592,9 +592,29 @@ def collate_fn(batch):
 
     if pq_end_pos[0] is not None:
         batch_pq_end_pos = torch.stack(pq_end_pos, dim=0)
-        return batch_input_ids, batch_attention_masks, batch_token_type_ids, batch_start_positions, batch_end_positions, batch_is_impossibles, batch_pq_end_pos, batch_cls_index, batch_p_mask
-
-    return batch_input_ids, batch_attention_masks, batch_token_type_ids, batch_start_positions, batch_end_positions, batch_is_impossibles, batch_cls_index, batch_p_mask
+        outputs = {
+            "input_ids": batch_input_ids,
+            "attention_mask": batch_attention_masks,
+            "token_type_ids": batch_token_type_ids,
+            "start_positions": batch_start_positions,
+            "end_positions": batch_end_positions,
+            "is_impossible": batch_is_impossibles,
+            "pq_end_pos": batch_pq_end_pos,
+            "cls_index": batch_cls_index,
+            "p_mask": batch_p_mask
+        }
+    else:
+        outputs = {
+            "input_ids": batch_input_ids,
+            "attention_mask": batch_attention_masks,
+            "token_type_ids": batch_token_type_ids,
+            "start_positions": batch_start_positions,
+            "end_positions": batch_end_positions,
+            "is_impossible": batch_is_impossibles,
+            "cls_index": batch_cls_index,
+            "p_mask": batch_p_mask
+        }
+    return outputs
 
 if __name__ == "__main__":
     from transformers import AutoModel, AutoTokenizer
