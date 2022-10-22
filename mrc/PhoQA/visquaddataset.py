@@ -616,6 +616,17 @@ def collate_fn(batch):
         }
     return outputs
 
+def build_dataloader(train_file, test_file, batch_size, max_seq_length, max_query_length, doc_stride):
+    """Builds the dataloader for the model"""
+    tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base")
+    #data_path, tokenizer, max_seq_length, max_query_length, doc_stride, is_training
+    train_dataset = ViSquadDataset(train_file, tokenizer, max_query_length=max_seq_length, max_query_length=max_query_length, doc_stride=doc_stride , is_training=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
+
+    test_dataset = ViSquadDataset(test_file, tokenizer, max_query_length=max_seq_length, max_query_length=max_query_length, doc_stride=doc_stride , is_training=False)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
+    return train_dataloader, test_dataloader
+
 if __name__ == "__main__":
     from transformers import AutoModel, AutoTokenizer
     #phobert = AutoModel.from_pretrained("vinai/phobert-base")
