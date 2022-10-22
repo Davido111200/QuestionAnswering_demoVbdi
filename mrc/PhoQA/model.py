@@ -6,14 +6,14 @@ from transformers import AutoModel, AutoTokenizer, RobertaModel, RobertaTokenize
 
 
 class PhoBertForQuestionAnswering(nn.Module):
-    def __init__(self, model_path, config):
+    def __init__(self, model_path, hidden_size, hidden_dropout_prob):
         super(PhoBertForQuestionAnswering, self).__init__()
         
         self.bert = AutoModel.from_pretrained(model_path)
-        self.qa_outputs = nn.Linear(config.hidden_size, 2)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.qa_outputs = nn.Linear(hidden_size, 2) # start, end
+        self.dropout = nn.Dropout(hidden_dropout_prob)
 
-        self.possible = nn.Linear(config.hidden_size, 2)
+        self.possible = nn.Linear(hidden_dropout_prob, 2) # possible, impossible
         self.init_weights()
 
     def init_weights(self):
@@ -63,6 +63,6 @@ class PhoBertForQuestionAnswering(nn.Module):
         return outputs
 
 
-def bulid_model(model_path, config):
-    model = PhoBertForQuestionAnswering(model_path, config)
+def bulid_model(model_path):
+    model = PhoBertForQuestionAnswering(model_path, 768, 0.2)
     return model
