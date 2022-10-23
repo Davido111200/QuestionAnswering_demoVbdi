@@ -37,9 +37,9 @@ def app():
             ('bm25', 'dpr'))
 
         if type_of_search == 'bm25':
-            st.write('You selected bm25.')
+            st.write('You selected bm25. This method takes less time but provides less accurate answers')
         elif type_of_search == 'dpr':
-            st.write('You selected dpr')
+            st.write('You selected dpr. This method takes more time but more accurate answers')
         
         num_answers = st.number_input(
             "How many answers do you want to receive?",
@@ -55,20 +55,22 @@ def app():
         )
         
         done = st.button(
-            "Search"
+            "Search", 
+            key="done_"
         )
 
-
-    if done:
-
-        with col2:
+    with col2:
+        if done:
             with st.spinner(text="🤖 Finding Answers..."):
                 retriever = PassageRetrieval(str(type_of_search))
                 answers = get_answer(question, retriever_model=retriever)
                 first_k_answers, first_k_scores = get_k_top_answer(answers, num_answers)
-            for answer in first_k_answers:
-                st.write(answer)
+            for idx, answer in enumerate(first_k_answers):
+                st.write(answer, "- Score:", first_k_scores[idx])
             st.balloons()
+    
+
+
 
 
 if __name__ == "__main__":
