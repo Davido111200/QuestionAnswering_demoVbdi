@@ -13,7 +13,7 @@ class Checkpointer:
             'optimizer': self.optimizer.state_dict(),
         }, os.path.join(self.save_dir, name + '.pth'))
 
-    def load(self, name):
-        checkpoint = torch.load(os.path.join(self.save_dir, name + '.pth'))
+    def load(self, model_path):
+        checkpoint = torch.load(os.path.join(self.save_dir, model_path))
         self.model.load_state_dict(checkpoint['model'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])

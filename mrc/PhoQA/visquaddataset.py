@@ -10,6 +10,8 @@ from torch.utils.data import DataLoader, TensorDataset, Dataset
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data.sampler import RandomSampler, SequentialSampler
 
+from transformers import AutoModel, AutoTokenizer
+
 
 def _is_whitespace(c):
     if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
@@ -65,6 +67,7 @@ class ViSquadSample:
         self.answer_text = answer_text
         self.answer_start_character = answer_start_character
         self.is_impossible = is_impossible
+        self.answers = answers
         self.start_position, self.end_position = 0, 0
 
         doc_tokens = []
@@ -88,6 +91,8 @@ class ViSquadSample:
 
         # Start end end positions only has a value during evaluation.
         if answer_start_character is not None and not is_impossible:
+            if answer_start_character >= len(char_to_word_offset):
+                answer_start_character = len(char_to_word_offset) - len(answer_text) + 1
             self.start_position = char_to_word_offset[answer_start_character]
             self.end_position = char_to_word_offset[
                 min(answer_start_character + len(answer_text) - 1, len(char_to_word_offset) - 1)
@@ -155,6 +160,8 @@ class ViSquadFeatures(object):
         self.is_impossible = is_impossible
         self.pq_end_pos = pq_end_pos
         self.tag_seq = tag_seq
+
+        #self.position_ids = create_position_ids_from_input_ids(input_ids, self.cls_index)
 
 
 class ViSquadDataset(Dataset):
@@ -322,10 +329,10 @@ class ViSquadDataset(Dataset):
                                                                             tok_end_position, 
                                                                             self.tokenizer, 
                                                                             example.answer_text)
-            if 'phobert' in str(type(self.tokenizer)) or 'roberta' in str(type(self.tokenizer)):
-                max_tokens_for_doc = self.max_seq_length - len(query_tokens) - 4 # phobert use 2 sep tokens
-            else:
-                max_tokens_for_doc = self.max_seq_length - len(query_tokens) - 3
+            #if 'phobert' in str(type(self.tokenizer)) or 'roberta' in str(type(self.tokenizer)):
+            max_tokens_for_doc = self.max_seq_length - len(query_tokens) - 4 # phobert use 2 sep tokens
+            #else:
+            #    max_tokens_for_doc = self.max_seq_length - len(query_tokens) - 3
             
             # We can have documents that are longer than the maximum sequence length. To deal with this we do a 
             # sliding window approach, where we take chunks of the up to our max length with a stride of `doc_stride`.
@@ -414,7 +421,7 @@ class ViSquadDataset(Dataset):
                 start_position = None
                 end_position = None
 
-                num_special_tokens = 3 if 'phobert' in str(type(self.tokenizer)) or 'roberta' in str(type(self.tokenizer)) else 2
+                num_special_tokens = 3 #if 'phobert' in str(type(self.tokenizer)) or 'roberta' in str(type(self.tokenizer)) else 2
 
                 # Get `start_position` and `end_position`
                 if self.is_training and not span_is_impossible:
@@ -610,7 +617,7 @@ def collate_fn(batch):
             "token_type_ids": batch_token_type_ids,
             "start_positions": batch_start_positions,
             "end_positions": batch_end_positions,
-            "is_impossible": batch_is_impossibles,
+            "is_impossibles": batch_is_impossibles,
             "cls_index": batch_cls_index,
             "p_mask": batch_p_mask
         }
@@ -620,10 +627,10 @@ def build_dataloader(train_file, test_file, batch_size, max_seq_length, max_quer
     """Builds the dataloader for the model"""
     tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base")
     #data_path, tokenizer, max_seq_length, max_query_length, doc_stride, is_training
-    train_dataset = ViSquadDataset(train_file, tokenizer, max_query_length=max_seq_length, max_query_length=max_query_length, doc_stride=doc_stride , is_training=True)
+    train_dataset = ViSquadDataset(train_file, tokenizer, max_seq_length=max_seq_length, max_query_length=max_query_length, doc_stride=doc_stride , is_training=True)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
 
-    test_dataset = ViSquadDataset(test_file, tokenizer, max_query_length=max_seq_length, max_query_length=max_query_length, doc_stride=doc_stride , is_training=False)
+    test_dataset = ViSquadDataset(test_file, tokenizer, max_seq_length=max_seq_length, max_query_length=max_query_length, doc_stride=doc_stride , is_training=True)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
     return train_dataloader, test_dataloader
 

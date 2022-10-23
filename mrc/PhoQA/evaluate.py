@@ -9,22 +9,26 @@ import re
 def evaluate(model, data_loader, device):
     all_results = []
     model.eval()
+    
     for batch in tqdm(data_loader):
         with torch.no_grad():
             inputs = {
                 'input_ids': batch['input_ids'].to(device),
                 'attention_mask': batch['attention_mask'].to(device),
-                'token_type_ids': batch['token_type_ids'].to(device),
+                #'token_type_ids': batch['token_type_ids'].to(device)*0,
                 'start_positions': None,
                 'end_positions': None,
                 'is_impossibles': None,
-                'position_ids': batch['position_ids'].to(device),
+                #'position_ids': batch['position_ids'].to(device),
             }
 
             outputs = model(**inputs)
-            all_results.append(outputs)
+            for result in outputs:
+                all_results.append(result)
 
-    exact_match, f1 = calculate_metrics(data_loader.data, all_results)
+        
+
+    exact_match, f1 = calculate_metrics(data_loader.dataset, all_results)
     print('exact_match: {}, f1: {}'.format(exact_match, f1))
     return exact_match, f1
 
@@ -32,19 +36,29 @@ def evaluate(model, data_loader, device):
 def calculate_metrics(dataset, results):
     exact_match = 0
     f1 = 0
+    dataset = dataset.data
+    ground_truths = []
+    predictions = []
     for sample, result in zip(dataset, results):
-        ground_truths = sample.answers
+        
+        ground_truths = [{
+            "text": sample.answer_text,
+            "answer_start": sample.start_position,
+            "answer_end": sample.end_position
+        }, ]
+
         prediction = {
-            "text": sample.context_text[result[1].argmax(): result[2].argmax()],
-            "answer_start": result[1].argmax(),
-            "answer_end": result[2].argmax()
+            "text": sample.context_text[result[0].argmax().item():result[1].argmax().item()],
+            "answer_start": result[0].argmax().item(),
+            "answer_end": result[1].argmax().item()
         }
         exact_match += metric_max_over_ground_truths(
             exact_match_score, prediction, ground_truths
         )
         f1 += metric_max_over_ground_truths(
-            f1_score, prediction, ground_truths
+            f1_score_for_tokens, prediction, ground_truths
         )
+        
     exact_match = 100.0 * exact_match / len(dataset)
     f1 = 100.0 * f1 / len(dataset)
     return exact_match, f1
@@ -71,8 +85,8 @@ def f1_score_for_tokens(prediction, ground_truth):
     num_same = sum(common.values())
     if len(prediction_tokens) == 0 or len(ground_truth_tokens) == 0:
         return 0
-    precision = 1.0 * num_same / len(prediction_tokens)
-    recall = 1.0 * num_same / len(ground_truth_tokens)
+    precision = 1.0 * num_same / len(prediction_tokens) + 1e-4
+    recall = 1.0 * num_same / len(ground_truth_tokens) + 1e-4
     f1 = (2 * precision * recall) / (precision + recall)
     return f1
 
