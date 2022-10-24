@@ -1,8 +1,8 @@
 import torch
 import sys
 sys.path.append(r'..\..\AnswerExtraction_demoVbdi')
-from mrc.xlmroberta.data_utils import SquadExample ,convert_examples_to_features
-from mrc.xlmroberta.model import XLM_MIXLAYER_single
+from mrc.xlmroberta_mrc.data_utils import SquadExample ,convert_examples_to_features
+from mrc.xlmroberta_mrc.model import XLM_MIXLAYER_single
 from transformers import XLMRobertaConfig, XLMRobertaTokenizer
 import numpy as np
 
