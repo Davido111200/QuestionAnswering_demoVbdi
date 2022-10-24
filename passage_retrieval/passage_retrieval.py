@@ -1,162 +1,95 @@
-from .bm25 import BM25Okapi, BM25L
-from .dpr import DPR
-import nltk
-from nltk.tokenize import sent_tokenize
-import numpy as np
+from ast import If
+from multiprocessing import pool
+from operator import le
+from googleapiclient.discovery import build
+import requests
+from bs4 import BeautifulSoup
 import re
+import time
+from ftfy import fix_encoding
+from langdetect import detect
 
-from .googlesearch import GoogleSearch
 
-class PassageRetrieval:
+class GoogleSearch:
+    """Google Search with API
     """
-    Passages retrieval
-    """
-    def __init__(self, search_engine):
-        """ Init Passage retrieval
+    def __init__(self, gg_api="AIzaSyCe6HDQsgJ3Nw42G0KZiGH4VL6afluQg-A", gg_cse='e42ceac5c43b04b50') -> None:
+        self.google_api = gg_api
+        self.google_cse = gg_cse
+        self.pool = pool.Pool(10)
+        self.service = build("customsearch", "v1", developerKey=self.google_api)
+
+    def search(self, query, start=0, num=5):
+        """Search query in google and return list of top k url
 
         Args:
-            search_engine (str): Search engine name
-        """
-        self.name = search_engine
-        if search_engine == 'bm25':
-            self.search_engine = BM25Okapi
-        elif search_engine == 'bm25l':
-            self.search_engine = BM25L
-        elif search_engine == 'dpr':
-            self.search_engine = DPR()
-
-    def split_passages_bm25(self, html_page, num_sent=5):
-        """Split html page into passages
-
-        Args:
-            html_page (string): string from html page
-            num_passage (int, optional): number of sentences per passage. Defaults to 10.
-        """
-        setences = sent_tokenize(html_page)
-        passages = []
-        for i in range(0, len(setences), num_sent):
-            passages.append('. '.join(setences[i:i+num_sent]))
-
-        return passages
-
-    def split_passages_dpr(self, html_page, num_passages=10):
-        """Split html page into passages
-
-        Args:
-            html_page (string): string from html page
-            num_passage (int, optional): number of sentences per passage. Defaults to 10.
-        """
-        setences = sent_tokenize(html_page)
-        interval = len(setences) // num_passages
-
-        if interval == 0:
-            return [html_page]
-        # split a list to n parts
-        passages = []
-        for i in range(0, len(setences), interval):
-            passages.append('. '.join(setences[i:i+interval]))
-
-        return passages
-
-    def get_score_one_page(self, query, list_passages):
-        """_summary_
-
-        Args:
-            query (str): Query
-            list_passages (list): List of passages from one page
+            query (str): Query string
+            start (int, optional): _description_. Defaults to 1.
+            num (int, optional): Number of page. Defaults to 10.
 
         Returns:
-            numpy.Array: Array of score
+            str: List of result of google searching
         """
-        scores = self.search_engine.get_scores(query, list_passages)
-        return scores
-
-    def get_top_k_one_page(self, query, list_passages, k=5):
-        """Get top k passages from one page
-
-        Args:
-            query (str): Query
-            list_passages (list): List of passages from one page
-            k (int, optional): Number of passage. Defaults to 10.
-
-        Returns:
-            _type_: _description_
-        """
-        if self.name != 'dpr':
-            scores = self.search_engine(corpus=list_passages).get_scores(query)
-        else:
-            scores = self.search_engine.get_scores(query, list_passages)
-        top_k = np.argsort(scores)[::-1][:k]
-        res = []
-        for i in top_k:
-            res.append((scores[i],list_passages[i]))
-        return res
-
-    def search(self, query, list_pages, k=10):
-        """Search query in list of pages
-
-        Args:
-            query (string): query
-            list_pages (list): list of pages
-            k (int, optional): number of top passages. Defaults to 10.
-
-        Returns:
-            list: list of top passages
-        """
-        if self.name == 'dpr':
-            split_passages = self.split_passages_dpr
-        else:
-            split_passages = self.split_passages_bm25
+        try:
+            res = self.service.cse().list(
+                q=query,
+                cx=self.google_cse,
+                start=start,
+                num=num,
+            ).execute()
+            list_content = self.pool.map(self.get_content, [item['link'] for item in res['items']])
             
-        top_passages = []
-        for page in list_pages:
-            passages = split_passages(page)
-            if len(passages) < 3:
-                continue
-            top_passages.extend(self.get_top_k_one_page(query, passages, k))
+            return list_content
+        except:
+            return []
 
-        top_passages.sort(key=lambda x: x[0], reverse=True)
-        return top_passages[:k]
-
-    def search_v2(self, query, list_pages, k=10):
-        """Search query in list of pages
+    def get_content(self, url):
+        """Get content from url
 
         Args:
-            query (string): query
-            list_pages (list): list of pages
-            k (int, optional): number of top passages. Defaults to 10.
+            url (str): an url
 
         Returns:
-            list: list of top passages
+            str: Text information from url
         """
-        top_passages = []
-        for page in list_pages:
-            passages = self.split_passages(page)
-            if len(passages) < 3:
-                continue
-            #top_passages.extend(self.get_top_k_one_page(query, passages, k))
-            top_passages.extend(passages)
         
-        top_passages = self.get_top_k_one_page(query, top_passages, k)
-        top_passages.sort(key=lambda x: x[0], reverse=True)
-        return top_passages[:k]
+        try: 
+            print(url)
+            response = requests.get(url, timeout=0.5)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            #soup = soup.get_text()
+            soup = ' '.join([p.text for p in soup.find_all('p')])
+            soup = fix_encoding(soup)
+            soup = re.sub(' +', ' ', soup)
+            soup = re.sub('\n+', '\n', soup)
+            soup = re.sub('\t+', '\t', soup)
+            soup = re.sub(r'[^\x00-\x7F]+', ' ', soup) if detect(soup) == 'en' else soup
 
+            return soup
+        except:
+            return 'None'
 
-# remove none-ascii characters by regural expression
-def remove_non_ascii(text):
-    return re.sub(r'[^\x00-\x7F]+', ' ', text)
+    def __getstate__(self):
+        self_dict = self.__dict__.copy()
+        del self_dict['pool']
+        return self_dict
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
 
 if __name__ == "__main__":
-    # test
     gg = GoogleSearch()
-    #start_time = time.time()
+    start_time = time.time()
     print("Start")
-    res = gg.search("Where karl marx was born?", 10)
-    search = PassageRetrieval('dpr')
-    result = search.search("Where karl marx was born?", res, 10)
+    res = gg.search("Ai là người giàu nhất việt nam?")
+    print("Time: ", time.time() - start_time)
+    print("Stop")
     print()
+    print()
+    #
 
-    for i in range(len(result)):
-        print(result[i][1])
-        print()
-    #print(result)
+    #k = res[0].split('.')
+
+    #print(k[1])
+
+    
