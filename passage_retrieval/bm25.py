@@ -139,6 +139,29 @@ class BM25L(BM25):
                      (self.k1 + ctd + self.delta)
         return score
 
+class BM25Plus(BM25):
+    def __init__(self, corpus, tokenizer=SimpleTokenizer(), k1=1.5, b=0.75, delta=1):
+        # Algorithm specific parameters
+        self.k1 = k1
+        self.b = b
+        self.delta = delta
+        super().__init__(corpus, tokenizer)
+
+    def initialize_idf(self, nd):
+        for word, freq in nd.items():
+            idf = math.log((self.corpus_len + 1) / freq)
+            self.idf[word] = idf
+
+    def get_scores(self, query):
+        score = np.zeros(self.corpus_len)
+        doc_len = np.array(self.doc_len)
+        for q in query:
+            q_freq = np.array([(doc.get(q) or 0) for doc in self.df])
+            score += (self.idf.get(q) or 0) * (self.delta + (q_freq * (self.k1 + 1)) /
+                                               (self.k1 * (1 - self.b + self.b * doc_len / self.avgdl) + q_freq))
+        return score
+
+
 if __name__ == "__main__":
     corpus = [
         "Karl Heinrich Marx FRSA (German: [maʁks]; 5 May 1818 – 14 March 1883) was a German philosopher, economist, historian, sociologist, political theorist, journalist, critic of political economy, and socialist revolutionary. His best-known titles are the 1848 pamphlet The Communist Manifesto and the four-volume Das Kapital (1867–1883). Marx's political and philosophical thought had enormous influence on subsequent intellectual, economic, and political history. His name has been used as an adjective, a noun, and a school of social theory.".lower(),
@@ -151,7 +174,8 @@ if __name__ == "__main__":
 
     def tokenizer(text):
         return text.split()
-    bm25 = BM25Okapi(corpus)
+        
+    bm25 = BM25Plus(corpus)
     query = "where marx was born?".lower()
     tokenized_query = query.split(" ")
 
