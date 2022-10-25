@@ -1,4 +1,4 @@
-from .bm25 import BM25Okapi, BM25L
+from .bm25 import BM25Okapi, BM25L, BM25Plus
 from .dpr import DPR
 import nltk
 from nltk.tokenize import sent_tokenize
@@ -22,6 +22,8 @@ class PassageRetrieval:
             self.search_engine = BM25Okapi
         elif search_engine == 'bm25l':
             self.search_engine = BM25L
+        elif search_engine == 'bm25plus':
+            self.search_engine = BM25Plus
         elif search_engine == 'dpr':
             self.search_engine = DPR()
 
